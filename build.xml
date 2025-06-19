@@ -1,0 +1,62 @@
+<!-- call like ant -buildfile D:\src\dev\JavaBuildScripts\build.xml -->
+<project default="build">
+  <property name="branch.name" value="${teamcity.projectName}" />
+  <property name="product.build.number" value="${build.number}" />
+  <property name="deploy.dir" value="C:\TeamCityDeployables\${branch.name}\${product.build.number}" />
+  <property name="msbuild.path" value="${DotNetFramework3.5_x86_Path}" /> <!-- C:\Windows\Microsoft.NET\Framework\v3.5 -->
+  <property name="visual-studio.path" value="${VS2008_Path}"/> <!-- C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE -->
+
+  <target name="deploy.configuration.check">
+    <condition property="deploy.configuration" value="Release">
+      <istrue value="${build.configuration.release}" />
+    </condition>
+
+    <condition property="deploy.configuration" value="Staging">
+      <istrue value="${build.configuration.staging}" />
+    </condition>
+
+    <condition property="deploy.configuration" value="Alpha">
+      <istrue value="${build.configuration.alpha}" />
+    </condition>
+  </target>
+
+  <target name="build">
+    <antcall target="build.dotnet"/>
+    <antcall target="build.java"/>
+  </target>
+
+  <target name="deploy" depends="deploy.configuration.check">
+    <antcall target="deploy.dotnet"/>
+    <antcall target="deploy.java"/>
+  </target>
+
+  <target name="build.dotnet">
+    <echo message="/*****Building DotNET CODE********/" />
+    <exec executable="${msbuild.path}\MSBuild.exe" failonerror="true">
+      <arg line="FirstLook.NET\MasterSolution\Build.xml /p:Configuration=Release /p:RunTests=true /t:Build "/>
+    </exec>
+  </target>
+
+  <target name="deploy.dotnet">
+    <echo message="/*****Deploying DotNET CODE********/" />
+    <exec executable="${msbuild.path}\MSBuild.exe" failonerror="true">
+      <arg line="FirstLook.NET\MasterSolution\Build.xml /p:Configuration=${deploy.configuration} /p:VSPath=&quot;${visual-studio.path}&quot; /p:DeployDir=${deploy.dir}\DotNET /p:RunTests=true /p:Version=${product.build.number} /t:Deploy "/>
+    </exec>
+  </target>
+
+  <target name="build.java">
+    <echo message="/*****Building JAVA CODE********/" />
+    <ant antfile="imt-build/build.xml" target="build" />
+  </target>
+
+  <target name="deploy.java">
+    <echo message="/*****Deploying JAVA CODE********/" />
+    <!-- Call the target to build everything -->
+    <ant antfile="imt-build/build.xml" target="allEnvironments">
+      <!-- runUnitTests just has to be defined for unit test to run-->
+      <!--<property name="runUnitTests" value="true"/>-->
+      <property name="deploymentDir" value="${deploy.dir}\Java"/>
+    </ant>
+  </target>
+
+</project>
