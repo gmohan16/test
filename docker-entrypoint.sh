@@ -7,3 +7,4 @@ source /convert_secret_to_env_vars.sh
 
 # Run the application as intended
 exec "$@"
+"adding for test2"
